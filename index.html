@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Event Countdown</title>
+<title>NNPC People Survey Countdown to Closing</title>
 <script>
   (function () {
     function units() {
@@ -124,7 +124,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-
 <div class="viewport">
   <main class="page">
     <section class="countdown-container" role="group" aria-labelledby="timerTitle">
-      <h2 id="timerTitle">Target Date</h2>
+      <h2 id="timerTitle">NNPC People Survey Countdown to Closing</h2>
 
       <div class="swap" id="mainSwap">
         <div class="panel active" id="runPanel">
@@ -203,15 +203,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-
 
 <script>
   /* =====================================================================
-     CONFIG: EDIT THIS BLOCK TO UPDATE THE COUNTDOWN
-     Dates are UTC (ISO format, ending in Z).
+     CONFIG: UPDATED FOR NNPC PEOPLE SURVEY
      ===================================================================== */
   const CONFIG = {
-    title:      "Target Date",                  // heading shown above the timer (max 60 chars)
-    startUtc:   "2027-12-31T22:59:59.000Z",     // counts down to this moment
-    endUtc:     "2028-01-01T22:59:59.000Z",     // then counts down to this moment ("live")
-    ALLOW_EDIT: true,                           // false = hide the "Edit event" button
-    STORAGE_KEY: "eventCountdownState"          // browser storage key for saved edits
+    title:      "NNPC People Survey Countdown to Closing", 
+    startUtc:   "2026-11-02T12:00:00.000Z",     
+    endUtc:     "2026-11-19T00:00:00.000Z",     
+    ALLOW_EDIT: true,                           
+    STORAGE_KEY: "eventCountdownState"          
   };
 
   const MAX_TITLE = 60;
