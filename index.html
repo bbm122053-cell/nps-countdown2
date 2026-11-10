@@ -76,47 +76,15 @@ h2 {
   font-size: min(calc(3.6 * var(--vw)), calc(6.4 * var(--vh)));
   font-weight: 700; line-height: 1.2; color: #38bdf8; overflow-wrap: break-word;
 }
-.footer { margin-top: min(2vw, 3.6vh); }
-.footer .row {
-  display: flex; align-items: flex-end; justify-content: center; flex-wrap: wrap;
-  gap: min(.9vw, 1.6vh); min-height: 2.6em;
-}
-#viewPanel .row { align-items: center; }
-.dates { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .2em min(1.6vw, 2.8vh); min-width: 0; }
-.target b { color: #cbd5e1; font-weight: 600; }
-.target { margin: 0; color: #94a3b8; overflow-wrap: break-word; min-width: 0; }
-.field { display: flex; flex-direction: column; align-items: flex-start; gap: .2em; color: #cbd5e1; }
-.field span { font-size: min(calc(1.05 * var(--vw)), calc(1.9 * var(--vh))); text-transform: uppercase; letter-spacing: .1em; }
-input {
-  background: #0f172a; color: #ffffff; border: 2px solid #64748b; border-radius: .4em;
-  padding: .35em .6em; color-scheme: dark; min-width: 0; min-height: 2.4em;
-}
-#eventName { width: min(14vw, 25vh); }
-.when { width: min(22vw, 39vh); }
-button {
-  min-height: 2.4em;
-  background: #0ea5e9; color: #04202e; border: 2px solid #0ea5e9; border-radius: .4em;
-  padding: .35em .9em; font-weight: 700; cursor: pointer;
-}
-button[hidden] { display: none; }
-button.secondary { background: transparent; color: #e2e8f0; border-color: #64748b; }
-button:hover { background: #38bdf8; border-color: #38bdf8; }
-button.secondary:hover { background: #334155; border-color: #94a3b8; }
-button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
-.msg { margin: .3em 0 0; min-height: 1.4em; color: #fca5a5; text-align: center; }
+.footer { display: none; }
 @media (max-aspect-ratio: 4 / 3) {
   .time-box { min-width: min(18vw, 32vh); }
-  #eventName, .when { width: min(34vw, 60vh); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @media (forced-colors: active) {
   body, .viewport { forced-color-adjust: none; background: Canvas; color: CanvasText; }
   .countdown-container { forced-color-adjust: none; background: Canvas; color: CanvasText; border: 2px solid CanvasText; }
-  h2, .number, .label, .target, .done, .field, .msg { forced-color-adjust: none; color: CanvasText; }
-  input { forced-color-adjust: none; background: Canvas; color: CanvasText; border-color: CanvasText; }
-  button { forced-color-adjust: none; background: ButtonFace; color: ButtonText; border-color: ButtonText; }
-  button:hover { background: Highlight; color: HighlightText; border-color: HighlightText; }
-  button:focus-visible, input:focus-visible { outline-color: Highlight; }
+  h2, .number, .label, .done { forced-color-adjust: none; color: CanvasText; }
 }
 </style>
 </head>
@@ -137,31 +105,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-
           </div>
         </div>
         <div class="panel" id="donePanel"><div class="done" id="doneText">The event has ended</div></div>
-      </div>
-
-      <div class="footer">
-        <div class="swap">
-          <div class="panel active" id="viewPanel">
-            <div class="row">
-              <div class="dates">
-                <p class="target" id="startLine"></p>
-                <p class="target" id="endLine"></p>
-              </div>
-              <button type="button" id="editBtn" aria-haspopup="true" aria-expanded="false" aria-controls="editPanel">Edit event</button>
-            </div>
-            <p class="msg" aria-hidden="true">&nbsp;</p>
-          </div>
-          <div class="panel" id="editPanel" role="group" aria-label="Edit event">
-            <div class="row">
-              <label class="field"><span>Event</span><input type="text" id="eventName" maxlength="60" autocomplete="off"></label>
-              <label class="field"><span>Start date &amp; time</span><input class="when" type="datetime-local" id="eventStart" step="1"></label>
-              <label class="field"><span>End date &amp; time</span><input class="when" type="datetime-local" id="eventEnd" step="1"></label>
-              <button type="button" id="saveBtn">Save</button>
-              <button type="button" id="cancelBtn" class="secondary">Cancel</button>
-            </div>
-            <p class="msg" id="msg" role="alert"></p>
-          </div>
-        </div>
       </div>
     </section>
   </main>
@@ -202,14 +145,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-
 </script>
 
 <script>
-  /* =====================================================================
-     CONFIG: UPDATED FOR NNPC PEOPLE SURVEY
-     ===================================================================== */
   const CONFIG = {
     title:      "NNPC People Survey Countdown to Closing", 
     startUtc:   "2026-11-02T12:00:00.000Z",     
     endUtc:     "2026-11-19T00:00:00.000Z",     
-    ALLOW_EDIT: true,                           
+    ALLOW_EDIT: false,                           
     STORAGE_KEY: "eventCountdownState"          
   };
 
@@ -217,47 +157,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-
   let current = { title: CONFIG.title, startUtc: CONFIG.startUtc, endUtc: CONFIG.endUtc };
   let startMs = Date.parse(current.startUtc);
   let endMs = Date.parse(current.endUtc);
-  let revision = 0;
   let phase = "";
-  const listeners = [];
-  let timerInterval = null;
 
   const $ = function (id) { return document.getElementById(id); };
 
-  function parseState(serialized) {
-    let data;
-    try { data = JSON.parse(serialized); } catch (e) { return null; }
-    if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-    if (typeof data.title !== "string") return null;
-    const title = data.title.trim();
-    if (!title || title.length > MAX_TITLE) return null;
-    const startText = typeof data.startUtc === "string" ? data.startUtc : data.targetUtc;
-    if (typeof startText !== "string") return null;
-    const start = Date.parse(startText);
-    if (!isFinite(start)) return null;
-    let end = start;
-    if (data.endUtc !== undefined) {
-      if (typeof data.endUtc !== "string") return null;
-      end = Date.parse(data.endUtc);
-      if (!isFinite(end) || end < start) return null;
-    }
-    return { title: title, startUtc: new Date(start).toISOString(), endUtc: new Date(end).toISOString() };
-  }
-
   function pad2(n) { return String(n).padStart(2, "0"); }
-  function toLocalInput(ms) {
-    const d = new Date(ms);
-    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
-      "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
-  }
-  function formatWhen(ms) {
-    try {
-      return new Date(ms).toLocaleString(undefined, {
-        weekday: "short", day: "numeric", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit", timeZoneName: "short"
-      });
-    } catch (e) { return new Date(ms).toString(); }
-  }
 
   const digitRoots = {};
   ["months", "days", "hours", "minutes", "seconds"].forEach(function (id) {
@@ -271,25 +175,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-
     $(hideId).classList.remove("active");
   }
 
-  function renderStatic() {
-    $("startLine").innerHTML = "<b>Starts:</b> ";
-    $("startLine").appendChild(document.createTextNode(formatWhen(startMs)));
-    $("endLine").innerHTML = "<b>Ends:</b> ";
-    $("endLine").appendChild(document.createTextNode(formatWhen(endMs)));
-    $("doneText").textContent = current.title + " has ended";
-    phase = "";
-    scheduleFit();
-  }
-
   function setPhase(next) {
     if (phase === next) return;
     phase = next;
     $("timerTitle").textContent = current.title;
-    if (next === "before") {
-      $("timerBox").setAttribute("aria-label", "Time remaining until " + current.title + " starts, " + formatWhen(startMs));
-    } else if (next === "live") {
-      $("timerBox").setAttribute("aria-label", "Time remaining until " + current.title + " ends, " + formatWhen(endMs));
-    }
     scheduleFit();
   }
 
@@ -298,6 +187,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-
     if (now >= endMs) {
       setPhase("ended");
       setActive("donePanel", "runPanel");
+      $("doneText").textContent = current.title + " has ended";
       ["months", "days", "hours", "minutes", "seconds"].forEach(function (id) { setDigit(id, "00"); });
       return;
     }
@@ -317,92 +207,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fbbf24; outline-
     current = state;
     startMs = Date.parse(state.startUtc);
     endMs = Date.parse(state.endUtc);
-    renderStatic();
     updateCountdown();
   }
 
-  window.getState = function () {
-    return JSON.stringify({ title: current.title, startUtc: current.startUtc, endUtc: current.endUtc });
-  };
-  window.setState = function (serialized) {
-    const next = parseState(serialized);
-    if (!next) return false;
-    applyState(next);
-    closeEdit(false);
-    return true;
-  };
-  window.subscribeStateChanged = function (listener) {
-    if (typeof listener !== "function") return function () {};
-    listeners.push(listener);
-    return function () {
-      const i = listeners.indexOf(listener);
-      if (i >= 0) listeners.splice(i, 1);
-    };
-  };
-  function notifyChanged() {
-    revision += 1;
-    try { localStorage.setItem(CONFIG.STORAGE_KEY, window.getState()); } catch (e) {}
-    const payload = { revision: revision, state: window.getState() };
-    listeners.slice().forEach(function (l) { l(payload); });
-  }
-
-  function openEdit() {
-    $("eventName").value = current.title;
-    $("eventStart").value = toLocalInput(startMs);
-    $("eventEnd").value = toLocalInput(endMs);
-    $("msg").textContent = "";
-    setActive("editPanel", "viewPanel");
-    $("editBtn").setAttribute("aria-expanded", "true");
-    $("eventName").focus();
-  }
-  function closeEdit(returnFocus) {
-    setActive("viewPanel", "editPanel");
-    $("editBtn").setAttribute("aria-expanded", "false");
-    $("msg").textContent = "";
-    if (returnFocus) $("editBtn").focus();
-  }
-  function saveEdit() {
-    const title = $("eventName").value.trim();
-    const startValue = $("eventStart").value;
-    const endValue = $("eventEnd").value;
-    const start = startValue ? new Date(startValue).getTime() : NaN;
-    const end = endValue ? new Date(endValue).getTime() : NaN;
-    if (!title) { $("msg").textContent = "Enter an event name."; $("eventName").focus(); return; }
-    if (!isFinite(start)) { $("msg").textContent = "Choose a start date and time."; $("eventStart").focus(); return; }
-    if (!isFinite(end)) { $("msg").textContent = "Choose an end date and time."; $("eventEnd").focus(); return; }
-    if (end < start) { $("msg").textContent = "The end must be after the start."; $("eventEnd").focus(); return; }
-    applyState({ title: title.slice(0, MAX_TITLE), startUtc: new Date(start).toISOString(), endUtc: new Date(end).toISOString() });
-    closeEdit(true);
-    notifyChanged();
-  }
-  $("editBtn").addEventListener("click", openEdit);
-  $("saveBtn").addEventListener("click", saveEdit);
-  $("cancelBtn").addEventListener("click", function () { closeEdit(true); });
-  $("editPanel").addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { e.preventDefault(); closeEdit(true); }
-    else if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); saveEdit(); }
-  });
-
-  function loadInitial() {
-    const p = new URLSearchParams(location.search);
-    if (p.get("title") && p.get("start")) {
-      const fromUrl = parseState(JSON.stringify({
-        title: p.get("title"), startUtc: p.get("start"), endUtc: p.get("end") || p.get("start")
-      }));
-      if (fromUrl) return fromUrl;
-    }
-    if (CONFIG.ALLOW_EDIT) {
-      try {
-        const saved = parseState(localStorage.getItem(CONFIG.STORAGE_KEY));
-        if (saved) return saved;
-      } catch (e) {}
-    }
-    return null;
-  }
-
-  if (!CONFIG.ALLOW_EDIT) $("editBtn").hidden = true;
-  applyState(loadInitial() || current);
-  timerInterval = setInterval(updateCountdown, 1000);
+  applyState(current);
+  setInterval(updateCountdown, 1000);
 </script>
 </body>
 </html>
